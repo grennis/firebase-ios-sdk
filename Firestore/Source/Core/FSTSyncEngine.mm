@@ -309,50 +309,52 @@ class LimboResolution {
   workerQueue->VerifyIsCurrentQueue();
   HARD_ASSERT(retries >= 0, "Got negative number of retries for transaction");
 
-  auto runner = std::make_shared<TransactionRunner>(workerQueue, _remoteStore, updateCallback, resultCallback);
+  auto runner = std::make_shared<TransactionRunner>(workerQueue, _remoteStore, updateCallback,
+                                                    resultCallback);
 
   runner->Run();
 
-//  backoff.BackoffAndRun([self, retries, backoff, workerQueue, updateCallback, resultCallback] {
-//    NSLog(@"bchen backoff and run at %d", retries);
-//    std::shared_ptr<Transaction> transaction = _remoteStore->CreateTransaction();
-//    updateCallback(transaction, [=](util::StatusOr<absl::any> maybe_result) {
-//      workerQueue->Enqueue([self, retries, workerQueue, backoff, updateCallback, resultCallback,
-//                            transaction, maybe_result] {
-//        if (!maybe_result.ok()) {
-//          if (retries > 0 && [self isRetryableTransactionError:maybe_result.status()] &&
-//              !transaction->IsPermanentlyFailed()) {
-//            return [self transactionWithRetries:(retries - 1)
-//                                    workerQueue:workerQueue
-//                                        backoff:std::move(backoff)
-//                                 updateCallback:updateCallback
-//                                 resultCallback:resultCallback];
-//          } else {
-//            resultCallback(std::move(maybe_result));
-//          }
-//        } else {
-//          transaction->Commit([self, retries, workerQueue, backoff, updateCallback, resultCallback,
-//                               maybe_result, transaction](Status status) {
-//            if (status.ok()) {
-//              resultCallback(std::move(maybe_result));
-//              return;
-//            }
-//
-//            if (retries > 0 && [self isRetryableTransactionError:status] &&
-//                !transaction->IsPermanentlyFailed()) {
-//              workerQueue->VerifyIsCurrentQueue();
-//              return [self transactionWithRetries:(retries - 1)
-//                                      workerQueue:workerQueue
-//                                          backoff:std::move(backoff)
-//                                   updateCallback:updateCallback
-//                                   resultCallback:resultCallback];
-//            }
-//            resultCallback(std::move(status));
-//          });
-//        }
-//      });
-//    });
-//  });
+  //  backoff.BackoffAndRun([self, retries, backoff, workerQueue, updateCallback, resultCallback] {
+  //    NSLog(@"bchen backoff and run at %d", retries);
+  //    std::shared_ptr<Transaction> transaction = _remoteStore->CreateTransaction();
+  //    updateCallback(transaction, [=](util::StatusOr<absl::any> maybe_result) {
+  //      workerQueue->Enqueue([self, retries, workerQueue, backoff, updateCallback, resultCallback,
+  //                            transaction, maybe_result] {
+  //        if (!maybe_result.ok()) {
+  //          if (retries > 0 && [self isRetryableTransactionError:maybe_result.status()] &&
+  //              !transaction->IsPermanentlyFailed()) {
+  //            return [self transactionWithRetries:(retries - 1)
+  //                                    workerQueue:workerQueue
+  //                                        backoff:std::move(backoff)
+  //                                 updateCallback:updateCallback
+  //                                 resultCallback:resultCallback];
+  //          } else {
+  //            resultCallback(std::move(maybe_result));
+  //          }
+  //        } else {
+  //          transaction->Commit([self, retries, workerQueue, backoff, updateCallback,
+  //          resultCallback,
+  //                               maybe_result, transaction](Status status) {
+  //            if (status.ok()) {
+  //              resultCallback(std::move(maybe_result));
+  //              return;
+  //            }
+  //
+  //            if (retries > 0 && [self isRetryableTransactionError:status] &&
+  //                !transaction->IsPermanentlyFailed()) {
+  //              workerQueue->VerifyIsCurrentQueue();
+  //              return [self transactionWithRetries:(retries - 1)
+  //                                      workerQueue:workerQueue
+  //                                          backoff:std::move(backoff)
+  //                                   updateCallback:updateCallback
+  //                                   resultCallback:resultCallback];
+  //            }
+  //            resultCallback(std::move(status));
+  //          });
+  //        }
+  //      });
+  //    });
+  //  });
 }
 
 - (void)applyRemoteEvent:(const RemoteEvent &)remoteEvent {

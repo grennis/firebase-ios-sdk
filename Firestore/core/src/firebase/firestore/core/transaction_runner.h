@@ -25,7 +25,6 @@
 #include "Firestore/core/src/firebase/firestore/util/async_queue.h"
 #include "Firestore/core/src/firebase/firestore/util/status.h"
 
-
 namespace core = firebase::firestore::core;
 namespace util = firebase::firestore::util;
 namespace remote = firebase::firestore::remote;
@@ -60,13 +59,13 @@ class TransactionRunner
   remote::RemoteStore* remote_store_;
   core::TransactionUpdateCallback update_callback_;
   core::TransactionResultCallback result_callback_;
-      int retries_left_;
-      remote::ExponentialBackoff backoff_;
+  int retries_left_;
+  remote::ExponentialBackoff backoff_;
 
-    bool IsRetryableTransactionError(const util::Status& error);
+  bool IsRetryableTransactionError(const util::Status& error);
 };
 
-}  // namespace remote
+}  // namespace core
 }  // namespace firestore
 }  // namespace firebase
 

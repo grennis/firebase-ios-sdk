@@ -61,7 +61,7 @@ class ExponentialBackoff {
                      double backoff_factor,
                      util::AsyncQueue::Milliseconds initial_delay,
                      util::AsyncQueue::Milliseconds max_delay);
-  
+
   /**
    * Instantiates the exponential backoff with the default values.
    */
