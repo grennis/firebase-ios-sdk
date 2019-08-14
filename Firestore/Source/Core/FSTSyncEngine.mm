@@ -34,6 +34,7 @@
 #include "Firestore/core/src/firebase/firestore/auth/user.h"
 #include "Firestore/core/src/firebase/firestore/core/target_id_generator.h"
 #include "Firestore/core/src/firebase/firestore/core/transaction.h"
+#include "Firestore/core/src/firebase/firestore/core/transaction_runner.h"
 #include "Firestore/core/src/firebase/firestore/core/view_snapshot.h"
 #include "Firestore/core/src/firebase/firestore/local/local_view_changes.h"
 #include "Firestore/core/src/firebase/firestore/local/local_write_result.h"
@@ -55,6 +56,7 @@ using firebase::firestore::auth::User;
 using firebase::firestore::core::Query;
 using firebase::firestore::core::TargetIdGenerator;
 using firebase::firestore::core::Transaction;
+using firebase::firestore::core::TransactionRunner;
 using firebase::firestore::core::ViewSnapshot;
 using firebase::firestore::local::LocalViewChanges;
 using firebase::firestore::local::LocalWriteResult;
@@ -307,41 +309,50 @@ class LimboResolution {
   workerQueue->VerifyIsCurrentQueue();
   HARD_ASSERT(retries >= 0, "Got negative number of retries for transaction");
 
-  std::shared_ptr<Transaction> transaction = _remoteStore->CreateTransaction();
-  updateCallback(transaction, [=](util::StatusOr<absl::any> maybe_result) {
-    workerQueue->Enqueue(
-        [self, retries, workerQueue, updateCallback, resultCallback, transaction, maybe_result] {
-          if (!maybe_result.ok()) {
-            if (retries > 0 && [self isRetryableTransactionError:maybe_result.status()] &&
-                !transaction->IsPermanentlyFailed()) {
-              return [self transactionWithRetries:(retries - 1)
-                                      workerQueue:workerQueue
-                                   updateCallback:updateCallback
-                                   resultCallback:resultCallback];
-            } else {
-              resultCallback(std::move(maybe_result));
-            }
-          } else {
-            transaction->Commit([self, retries, workerQueue, updateCallback, resultCallback,
-                                 maybe_result, transaction](Status status) {
-              if (status.ok()) {
-                resultCallback(std::move(maybe_result));
-                return;
-              }
+  auto runner = std::make_shared<TransactionRunner>(workerQueue, _remoteStore, updateCallback, resultCallback);
 
-              if (retries > 0 && [self isRetryableTransactionError:status] &&
-                  !transaction->IsPermanentlyFailed()) {
-                workerQueue->VerifyIsCurrentQueue();
-                return [self transactionWithRetries:(retries - 1)
-                                        workerQueue:workerQueue
-                                     updateCallback:updateCallback
-                                     resultCallback:resultCallback];
-              }
-              resultCallback(std::move(status));
-            });
-          }
-        });
-  });
+  runner->Run();
+
+//  backoff.BackoffAndRun([self, retries, backoff, workerQueue, updateCallback, resultCallback] {
+//    NSLog(@"bchen backoff and run at %d", retries);
+//    std::shared_ptr<Transaction> transaction = _remoteStore->CreateTransaction();
+//    updateCallback(transaction, [=](util::StatusOr<absl::any> maybe_result) {
+//      workerQueue->Enqueue([self, retries, workerQueue, backoff, updateCallback, resultCallback,
+//                            transaction, maybe_result] {
+//        if (!maybe_result.ok()) {
+//          if (retries > 0 && [self isRetryableTransactionError:maybe_result.status()] &&
+//              !transaction->IsPermanentlyFailed()) {
+//            return [self transactionWithRetries:(retries - 1)
+//                                    workerQueue:workerQueue
+//                                        backoff:std::move(backoff)
+//                                 updateCallback:updateCallback
+//                                 resultCallback:resultCallback];
+//          } else {
+//            resultCallback(std::move(maybe_result));
+//          }
+//        } else {
+//          transaction->Commit([self, retries, workerQueue, backoff, updateCallback, resultCallback,
+//                               maybe_result, transaction](Status status) {
+//            if (status.ok()) {
+//              resultCallback(std::move(maybe_result));
+//              return;
+//            }
+//
+//            if (retries > 0 && [self isRetryableTransactionError:status] &&
+//                !transaction->IsPermanentlyFailed()) {
+//              workerQueue->VerifyIsCurrentQueue();
+//              return [self transactionWithRetries:(retries - 1)
+//                                      workerQueue:workerQueue
+//                                          backoff:std::move(backoff)
+//                                   updateCallback:updateCallback
+//                                   resultCallback:resultCallback];
+//            }
+//            resultCallback(std::move(status));
+//          });
+//        }
+//      });
+//    });
+//  });
 }
 
 - (void)applyRemoteEvent:(const RemoteEvent &)remoteEvent {

@@ -41,6 +41,7 @@ namespace remote {
  */
 class ExponentialBackoff {
  public:
+  using Milliseconds = util::AsyncQueue::Milliseconds;
   /**
    * @param queue The queue to run operations on.
    * @param timer_id The id to use when scheduling backoff operations on the
@@ -60,6 +61,12 @@ class ExponentialBackoff {
                      double backoff_factor,
                      util::AsyncQueue::Milliseconds initial_delay,
                      util::AsyncQueue::Milliseconds max_delay);
+  
+  /**
+   * Instantiates the exponential backoff with the default values.
+   */
+  ExponentialBackoff(const std::shared_ptr<util::AsyncQueue>& queue,
+                     util::TimerId timer_id);
 
   /**
    * Resets the backoff delay.
@@ -92,9 +99,20 @@ class ExponentialBackoff {
     delayed_operation_.Cancel();
   }
 
- private:
-  using Milliseconds = util::AsyncQueue::Milliseconds;
+  Milliseconds current_base_{0};
 
+  /**
+   * Initial backoff time in milliseconds after an error. Set to 1s according to
+   * https://cloud.google.com/apis/design/errors.
+   */
+  Milliseconds DEFAULT_BACKOFF_INITIAL_DELAY_MS = Milliseconds(1000);
+
+  double DEFAULT_BACKOFF_FACTOR = 1.5;
+
+  /** Maximum backoff time in milliseconds. */
+  Milliseconds DEFAULT_BACKOFF_MAX_DELAY_MS = Milliseconds(60 * 1000);
+
+ private:
   // Returns a random value in the range [-current_base_/2, current_base_/2].
   Milliseconds GetDelayWithJitter();
   Milliseconds ClampDelay(Milliseconds delay) const;
@@ -104,7 +122,6 @@ class ExponentialBackoff {
   util::DelayedOperation delayed_operation_;
 
   const double backoff_factor_;
-  Milliseconds current_base_{0};
   const Milliseconds initial_delay_;
   const Milliseconds max_delay_;
   util::SecureRandom secure_random_;

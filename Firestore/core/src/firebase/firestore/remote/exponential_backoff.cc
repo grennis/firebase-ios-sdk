@@ -53,6 +53,17 @@ ExponentialBackoff::ExponentialBackoff(const std::shared_ptr<AsyncQueue>& queue,
               "Initial delay can't be greater than max delay");
 }
 
+ExponentialBackoff::ExponentialBackoff(const std::shared_ptr<AsyncQueue>& queue,
+                                       TimerId timer_id)
+    : queue_{queue},
+      timer_id_{timer_id},
+      backoff_factor_{DEFAULT_BACKOFF_FACTOR},
+      initial_delay_{DEFAULT_BACKOFF_INITIAL_DELAY_MS},
+      max_delay_{DEFAULT_BACKOFF_MAX_DELAY_MS},
+      last_attempt_time_{chr::steady_clock::now()} {
+  HARD_ASSERT(queue, "Queue can't be null");
+}
+
 void ExponentialBackoff::BackoffAndRun(AsyncQueue::Operation&& operation) {
   Cancel();
 
@@ -68,6 +79,7 @@ void ExponentialBackoff::BackoffAndRun(AsyncQueue::Operation&& operation) {
       std::max(Milliseconds::zero(), desired_delay_with_jitter - delay_so_far);
 
   if (current_base_.count() > 0) {
+    LOG_DEBUG("bchen backing off for %s", current_base_.count());
     LOG_DEBUG(
         "Backing off for %s ms "
         "(base delay: %s ms, "
@@ -83,10 +95,13 @@ void ExponentialBackoff::BackoffAndRun(AsyncQueue::Operation&& operation) {
         operation();
       });
 
+  LOG_DEBUG("bchen current base at %s", current_base_.count());
+
   // Apply backoff factor to determine next delay, but ensure it is within
   // bounds.
   current_base_ = ClampDelay(
       chr::duration_cast<Milliseconds>(current_base_ * backoff_factor_));
+  LOG_DEBUG("bchen new base at %s", current_base_.count());
 }
 
 ExponentialBackoff::Milliseconds ExponentialBackoff::GetDelayWithJitter() {

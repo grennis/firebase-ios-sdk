@@ -104,12 +104,6 @@ DelayedOperation AsyncQueue::EnqueueAfterDelay(const Milliseconds delay,
   std::lock_guard<std::mutex> lock{shut_down_mutex_};
   VerifyIsCurrentExecutor();
 
-  // While not necessarily harmful, we currently don't expect to have multiple
-  // callbacks with the same timer_id in the queue, so defensively reject
-  // them.
-  HARD_ASSERT(!IsScheduled(timer_id),
-              "Attempted to schedule multiple operations with id %s", timer_id);
-
   if (is_shutting_down_) {
     return DelayedOperation();
   }

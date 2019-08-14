@@ -43,6 +43,8 @@ cc_library(
     query.h
     target_id_generator.cc
     target_id_generator.h
+    transaction_runner.h
+    transaction_runner.cc
     user_data.h
     user_data.mm
   DEPENDS

@@ -58,7 +58,11 @@ enum class TimerId {
   /**
    * A timer used to periodically attempt LRU Garbage collection
    */
-  GarbageCollectionDelay
+  GarbageCollectionDelay,
+  /**
+   * A timer used to retry transactions.
+   */
+  RetryTransaction
 };
 
 // A serial queue that executes given operations asynchronously, one at a time.
